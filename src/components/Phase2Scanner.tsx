@@ -20,6 +20,8 @@ import { URL_SAMPLES } from "@/lib/url/samples";
 import type { UrlAnalysisReport } from "@/lib/url/types";
 import { UrlResultCard } from "@/components/phase2/UrlResultCard";
 import { UpiResultCard } from "@/components/phase2/UpiResultCard";
+import LiveQrCamera from "@/components/phase2/LiveQrCamera";
+import { Camera } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/LanguageProvider";
 import {
   PHASE2_COPY,
@@ -179,6 +181,7 @@ export default function Phase2Scanner() {
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlTabRef = useRef<HTMLButtonElement>(null);
   const qrTabRef = useRef<HTMLButtonElement>(null);
@@ -353,6 +356,32 @@ export default function Phase2Scanner() {
       if (requestId !== qrRequestIdRef.current) return;
       setQrError(error instanceof Error ? error.message : copy.errors.demoFailed);
       setQrLoading(false);
+    }
+  }
+
+  async function handleLiveScan(decodedText: string) {
+    setShowCamera(false);
+    const requestId = ++qrRequestIdRef.current;
+    const isCurrent = () => requestId === qrRequestIdRef.current;
+
+    setQrError(null);
+    setQrReport(null);
+    setQrContent(null);
+    setQrFileInfo(null);
+    setQrPreview(null);
+
+    try {
+      const content = classifyQrContent(decodedText);
+      setQrFileInfo({ name: "Live Camera Capture", width: 400, height: 400 });
+      setQrContent(content);
+
+      if (content.kind === "url") {
+        await analyzeUrlValue(content.url, "qr", requestId);
+      }
+    } catch (error) {
+      if (!isCurrent()) return;
+      const message = error instanceof Error ? error.message : copy.errors.decodeFailed;
+      setQrError(message);
     }
   }
 
@@ -534,6 +563,26 @@ export default function Phase2Scanner() {
             tabIndex={0}
             className="focus:outline-none"
           >
+            {showCamera ? (
+              <div className="mb-4">
+                <LiveQrCamera
+                  onScanSuccess={handleLiveScan}
+                  onClose={() => setShowCamera(false)}
+                />
+              </div>
+            ) : (
+              <div className="mb-3 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
+                  disabled={qrLoading}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#D97706] to-[#B45309] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:from-[#B45309] hover:to-[#92400E] disabled:opacity-60"
+                >
+                  <Camera className="h-4 w-4" aria-hidden="true" />
+                  Scan with Device Camera
+                </button>
+              </div>
+            )}
             <div
               onDragOver={(event) => {
                 event.preventDefault();

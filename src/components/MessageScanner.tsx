@@ -228,7 +228,7 @@ export default function MessageScanner() {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), 30000);
       try {
-        const response = await fetch("/api/scan-ai", {
+        const response = await fetch("/api/scan-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -448,16 +448,16 @@ export function collectUrlWarnings(
           "DOMAIN_VERY_NEW",
           "HIGH",
           "Domain was registered very recently",
-          `RDAP reports this domain was created ${rdap.ageDays} day(s) ago. New domains are disproportionately used for short-lived scam campaigns.`
+          `RDAP reports this domain was created ${rdap.ageDays} day(s) ago. Newly registered domains under 30 days are disproportionately used for short-lived scam campaigns.`
         )
       );
     } else if (rdap.ageDays <= 30) {
       warnings.push(
         warning(
           "DOMAIN_RECENT",
-          "MEDIUM",
+          "HIGH",
           "Domain is less than 30 days old",
-          `RDAP reports this domain was created ${rdap.ageDays} day(s) ago. Confirm the domain through an official channel before trusting it.`
+          `RDAP reports this domain was created ${rdap.ageDays} day(s) ago. Domains registered within the last 30 days are flagged as high risk.`
         )
       );
     }

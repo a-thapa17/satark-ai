@@ -9,6 +9,8 @@ export interface UpiPaymentDetails {
   merchantCode?: string;
   transactionRef?: string;
   warnings: string[];
+  isSuspiciousVpa?: boolean;
+  suspiciousReasons?: string[];
 }
 
 export type UpiParseOutcome =
@@ -19,6 +21,16 @@ export type UpiParseOutcome =
 const UPI_ID_PATTERN = /^[A-Za-z0-9._-]{2,256}@[A-Za-z][A-Za-z0-9.-]{1,64}$/;
 const AMOUNT_PATTERN = /^\d{1,9}(?:\.\d{1,2})?$/;
 const CURRENCY_PATTERN = /^[A-Z]{3}$/;
+
+// Known high-risk phishing / brand impersonation handles used in Indian cyber scams
+const SUSPICIOUS_VPA_PATTERNS = [
+  { pattern: /^(?:support|help|customercare|care|service|refund|kyc|verify|officer|nodal)[\w.-]*@/i, reason: "Impersonates customer care or official support desk" },
+  { pattern: /[\w.-]*(?:sbi|hdfc|icici|axis|pnb|paytm|phonepe|gpay|bhim|airtel)[\w.-]*(?:support|care|help|refund|kyc|update)[\w.-]*@/i, reason: "Lookalike bank or wallet brand support VPA" },
+  { pattern: /[\w.-]*(?:electricity|bijli|bses|tneb|mseb|dhbvn|uppcl)[\w.-]*@/i, reason: "Impersonates electricity department or power utility" },
+  { pattern: /[\w.-]*(?:police|cbi|cybercell|customs|court|rbi|trai)[\w.-]*@/i, reason: "Impersonates law enforcement or government authority" },
+  { pattern: /[\w.-]*(?:lottery|kbc|prize|reward|cashback|win)[\w.-]*@/i, reason: "Lottery, prize, or reward claim lure" },
+  { pattern: /[\w.-]*(?:parttime|task|telegram|job|earn)[\w.-]*@/i, reason: "Task scam or prepaid job lure VPA" },
+];
 
 /**
  * Parses a UPI payment URI. This function only describes the request encoded
@@ -52,12 +64,24 @@ export function parseUpiUri(input: string): UpiParseOutcome {
   }
 
   const warnings: string[] = [];
+  const suspiciousReasons: string[] = [];
+
   if (!UPI_ID_PATTERN.test(upiId)) {
     warnings.push("The UPI ID format is unusual. Verify it in your payment app before paying.");
   }
   if (upiId.length > 256) {
     warnings.push("The UPI ID is unusually long.");
   }
+
+  // Check for suspicious VPA patterns
+  for (const { pattern, reason } of SUSPICIOUS_VPA_PATTERNS) {
+    if (pattern.test(upiId)) {
+      suspiciousReasons.push(reason);
+      warnings.push(`Suspicious VPA Pattern: ${reason}`);
+    }
+  }
+
+  const isSuspiciousVpa = suspiciousReasons.length > 0;
 
   const rawName = (params.get("pn") ?? "").trim();
   const payeeName = rawName ? rawName.slice(0, 120) : undefined;
@@ -110,6 +134,8 @@ export function parseUpiUri(input: string): UpiParseOutcome {
       merchantCode,
       transactionRef,
       warnings,
+      isSuspiciousVpa,
+      suspiciousReasons,
     },
   };
 }

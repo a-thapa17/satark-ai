@@ -37,7 +37,8 @@ export function maskSensitiveData(text: string): MaskResult {
   // or 12 continuous digits). Matching unformatted 12-digit values too avoids
   // sending a real Aadhaar number to the AI layer simply because separators
   // were omitted.
-  const aadhaarRegex = /\b\d{4}[ -]?\d{4}[ -]?\d{4}\b/g;
+  // Matches 12-digit Aadhaar with any combination of spaces, hyphens, or no separator
+  const aadhaarRegex = /\b\d{4}[\s-]*\d{4}[\s-]*\d{4}\b/g;
   masked = masked.replace(aadhaarRegex, () => {
     count++;
     types.add("Aadhaar Number");
@@ -45,7 +46,8 @@ export function maskSensitiveData(text: string): MaskResult {
   });
 
   // 3. Indian PAN Card Numbers: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)
-  const panRegex = /\b[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}\b/g;
+  // Matches 10-character Indian PAN: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F) with optional internal spaces
+  const panRegex = /\b[A-Za-z]{5}[\s-]?[0-9]{4}[\s-]?[A-Za-z]{1}\b/gi;
   masked = masked.replace(panRegex, () => {
     count++;
     types.add("PAN ID");
@@ -65,6 +67,14 @@ export function maskSensitiveData(text: string): MaskResult {
   // "492019 is your OTP". The keyword-first rule above cannot see that.
   const otpBeforeLabelRegex =
     /\b(\d{4,6})\b(?=\s*(?:is|as|:|-)?\s*(?:your|the)?\s*(?:login|verification|security|one[ -]time)?\s*(?:otp|one[ -]time[ -](?:password|code)|verification code|security code|pin)\b)/gi;
+
+  // Standalone 6-digit verification code regex near words or explicit 6-digit code patterns
+  const explicitSixDigitOtp = /\b(?:code|otp|pin|token)[\s:]+(\d{6})\b/gi;
+  masked = masked.replace(explicitSixDigitOtp, (fullMatch, code) => {
+    count++;
+    types.add("OTP / Secret Code");
+    return fullMatch.replace(code, "[MASKED_OTP]");
+  });
   masked = masked.replace(otpBeforeLabelRegex, () => {
     count++;
     types.add("OTP / Secret Code");
