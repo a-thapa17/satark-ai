@@ -7,6 +7,7 @@ export type SignalCategory =
   | "ENTITY_IMPERSONATION"
   | "SUSPICIOUS_LINK"
   | "JOB_PRIZE_SCAM"
+  | "INVESTMENT_SCAM"
   | "MALICIOUS_APP_ACCESS"
   | "IDENTITY_THEFT"
   | "DEFENSIVE_SIGNAL";
@@ -59,6 +60,7 @@ export interface ScanReport {
   safeNextSteps: string[];
   maskedInput: string;
   rawInputLength: number;
+  maskedItemsCount: number;
   timestamp: string;
   limitationsDisclaimer: string;
   aiAnalysis?: AiAnalysisReport;

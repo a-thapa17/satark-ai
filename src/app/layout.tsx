@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 
 export const metadata: Metadata = {
   title: "Satark AI — Stay Alert. Stay Protected.",
@@ -35,7 +36,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[#FAF7F2] text-[#1C1917] selection:bg-[#FEF3C7] selection:text-[#92400E]">
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

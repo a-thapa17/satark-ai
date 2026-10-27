@@ -1,669 +1,619 @@
 "use client";
 
 import React, { useState } from "react";
-import CinematicIntro from "@/components/CinematicIntro";
-import MessageScanner from "@/components/MessageScanner";
 import {
-  ShieldAlert,
-  ShieldCheck,
-  Shield,
   AlertTriangle,
   ArrowRight,
-  PhoneCall,
-  QrCode,
-  Globe,
-  MessageSquareWarning,
-  Lock,
+  ChevronRight,
+  ExternalLink,
   EyeOff,
   FileText,
-  ExternalLink,
-  ChevronRight,
+  Globe,
   HelpCircle,
+  Lock,
+  MessageSquareWarning,
+  PhoneCall,
+  QrCode,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import CinematicIntro from "@/components/CinematicIntro";
+import SiteHeader from "@/components/SiteHeader";
+import MessageScanner from "@/components/MessageScanner";
+import Phase2Scanner from "@/components/Phase2Scanner";
+import HelpHub from "@/components/help/HelpHub";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import {
+  LANDING_COPY,
+  SAMPLE_INPUTS,
+  type LandingTab,
+} from "@/lib/i18n/landing";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"url" | "qr" | "phone">("url");
-
-  const sampleScans = {
-    url: {
-      title: "Lookalike Banking URL",
-      input: "https://onlinesbi-kyc-portal.secure-banking-support.in/login",
-      riskLevel: "High risk",
-      riskBadgeClass: "bg-red-100 text-red-800 border-red-200",
-      category: "Lookalike Domain Impersonation",
-      confidence: "High (Domain registered 2 days ago)",
-      reasons: [
-        "Domain registered via RDAP only 48 hours ago in a high-risk offshore registrar.",
-        "Deep subdomains mimick 'onlinesbi' to deceive mobile users.",
-        "Not recognized by SBI's authorized host registry.",
-      ],
-      nextSteps: [
-        "Close this tab immediately; do not enter credentials.",
-        "Bookmark only the official bank portal: https://onlinesbi.sbi",
-      ],
-    },
-    qr: {
-      title: "UPI QR Payment Trap",
-      input: "upi://pay?pa=refund-agent981@okaxis&pn=Electricity%20Refund&am=4500",
-      riskLevel: "Suspicious",
-      riskBadgeClass: "bg-amber-100 text-amber-800 border-amber-200",
-      category: "UPI 'Receive Money' Scam",
-      confidence: "High (Payload requires PIN to debit)",
-      reasons: [
-        "Payload attempts to debit ₹4,500 from your account under the guise of an 'Electricity Refund'.",
-        "Rule: You NEVER need to enter a UPI PIN or scan a QR code to RECEIVE money.",
-      ],
-      nextSteps: [
-        "Decline the collect request or do not approve the payment on your UPI app.",
-        "Report the VPA to National Cyber Crime Reporting Portal (cybercrime.gov.in).",
-      ],
-    },
-    phone: {
-      title: "Suspect 'Digital Arrest' Call",
-      input: "+91 98765 43210 (Claiming Mumbai Police / CBI / Customs)",
-      riskLevel: "High risk",
-      riskBadgeClass: "bg-red-100 text-red-800 border-red-200",
-      category: "Coercive Impersonation (Digital Arrest)",
-      confidence: "High (Classic extortion script)",
-      reasons: [
-        "Claims parcel seized with illegal contraband at customs or money laundering case.",
-        "Threatens immediate arrest via video call; demands money transfer to 'reserve account'.",
-        "Official police or law enforcement agencies NEVER conduct arrests over Skype/WhatsApp video.",
-      ],
-      nextSteps: [
-        "Hang up immediately. You cannot be arrested digitally over video call.",
-        "Report number on Sanchar Saathi (Chakshu) and I4C suspect database.",
-      ],
-    },
+  const [activeTab, setActiveTab] = useState<LandingTab>("url");
+  const { language } = useLanguage();
+  const copy = LANDING_COPY[language];
+  const activeSample = {
+    ...SAMPLE_INPUTS[activeTab],
+    ...copy.samples.items[activeTab],
   };
 
-  const activeSample = sampleScans[activeTab];
+  const quickIcons = [
+    <MessageSquareWarning key="message" className="h-5 w-5" aria-hidden="true" />,
+    <QrCode key="qr" className="h-5 w-5" aria-hidden="true" />,
+    <HelpCircle key="help" className="h-5 w-5" aria-hidden="true" />,
+  ];
+
+  const pillarIcons = [
+    <MessageSquareWarning key="message" className="h-5 w-5 text-[#B45309]" aria-hidden="true" />,
+    <ShieldAlert key="shield-alert" className="h-5 w-5 text-[#B45309]" aria-hidden="true" />,
+    <AlertTriangle key="alert" className="h-5 w-5 text-[#B45309]" aria-hidden="true" />,
+    <ShieldCheck key="shield-check" className="h-5 w-5 text-[#B45309]" aria-hidden="true" />,
+  ];
+
+  const trustIcons = [
+    <EyeOff key="eye-off" className="h-4 w-4" aria-hidden="true" />,
+    <ShieldCheck key="shield-check" className="h-4 w-4" aria-hidden="true" />,
+    <FileText key="file-text" className="h-4 w-4" aria-hidden="true" />,
+  ];
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-[#1C1917] selection:bg-[#FEF3C7] selection:text-[#92400E]">
-      {/* Cinematic Intro Animation (plays once per session) */}
+    <div className="min-h-screen bg-[#FAF7F2] pb-20 text-[#1C1917] selection:bg-[#FEF3C7] selection:text-[#92400E] md:pb-0">
       <CinematicIntro />
 
-      {/* Main Homepage Content */}
       <div id="main-homepage-content" className="transition-opacity duration-600 ease-in-out">
-        {/* Top Banner: Emergency Helpline 1930 */}
-      <div className="bg-[#1C1917] text-[#FAF7F2] text-xs sm:text-sm px-4 py-2 border-b border-[#292524]">
-        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 font-medium">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#D97706] animate-pulse" />
-            <span>National Cyber Fraud Helpline (India):</span>
-            <a
-              href="tel:1930"
-              className="text-[#D97706] font-bold hover:underline tracking-wide text-sm"
-            >
-              Dial 1930
-            </a>
-            <span className="text-[#A8A29E] hidden md:inline">
-              (Available 24x7 for immediate financial fraud response)
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-[#A8A29E]">
-            <a
-              href="https://cybercrime.gov.in"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[#FAF7F2] inline-flex items-center gap-1 transition-colors"
-            >
-              cybercrime.gov.in
-              <ExternalLink className="w-3 h-3" />
-            </a>
-            <span className="hidden sm:inline">|</span>
-            <span className="text-[#D97706] font-semibold">Phase 1 Live</span>
-          </div>
-        </div>
-      </div>
+        <a href="#main-content" className="skip-link">
+          {copy.skip}
+        </a>
 
-      {/* Main Header / Navigation */}
-      <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#E7E1D8]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#D97706] flex items-center justify-center text-white shadow-sm ring-4 ring-[#D97706]/10">
-              <ShieldAlert className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-2xl tracking-tight text-[#1C1917]">
-                  SATARK <span className="text-[#D97706]">AI</span>
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EBE3D5] text-[#57534E]">
-                  v2.0
-                </span>
-              </div>
-              <p className="text-xs text-[#57534E] font-medium tracking-wide">
-                Stay Alert. Stay Protected.
-              </p>
-            </div>
-          </div>
+        <SiteHeader />
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#57534E]">
-            <a href="#how-it-works" className="hover:text-[#1C1917] transition-colors">
-              How It Works
-            </a>
-            <a href="#scanner" className="hover:text-[#1C1917] transition-colors">
-              Message Scanner
-            </a>
-            <a href="#privacy" className="hover:text-[#1C1917] transition-colors">
-              Privacy First
-            </a>
-            <a href="#resources" className="hover:text-[#1C1917] transition-colors">
-              Emergency Channels
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <a
-              href="#scanner"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-sm font-semibold shadow-sm transition-all hover:shadow"
-            >
-              <span>Scan Message</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="relative pt-16 pb-20 px-4 sm:px-6 overflow-hidden">
-        <div className="max-w-6xl mx-auto">
-          <div className="max-w-3xl">
-            {/* Tagline Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EBE3D5]/70 border border-[#DFD4C0] text-[#78350F] text-xs font-semibold uppercase tracking-wider mb-6">
-              <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
-              Digital Safety & Scam Intelligence for India
-            </div>
-
-            <h1 className="text-4xl sm:text-6xl font-black text-[#1C1917] tracking-tight leading-[1.1] mb-6">
-              In the first five minutes of a suspicious message,{" "}
-              <span className="text-[#D97706] underline decoration-[#D97706]/30 underline-offset-8">
-                clarity saves money.
-              </span>
-            </h1>
-
-            <p className="text-lg sm:text-xl text-[#57534E] leading-relaxed mb-8 font-normal">
-              Most tools return only a cryptic label. Satark AI delivers plain-language explainability:{" "}
-              <strong className="text-[#1C1917]">is this a scam</strong>,{" "}
-              <strong className="text-[#1C1917]">why it was flagged</strong>, and{" "}
-              <strong className="text-[#1C1917]">what safe actions to take right now</strong>.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <a
-                href="#scanner"
-                className="px-6 py-3.5 rounded-xl bg-[#1C1917] hover:bg-[#292524] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md inline-flex items-center gap-2"
-              >
-                <span>Scan a Message Now</span>
-                <ChevronRight className="w-4 h-4 text-[#D97706]" />
-              </a>
-
-              <a
-                href="tel:1930"
-                className="px-6 py-3.5 rounded-xl bg-white border border-[#DFD4C0] hover:border-[#D97706] text-[#1C1917] text-sm font-semibold transition-all shadow-sm hover:shadow inline-flex items-center gap-2"
-              >
-                <PhoneCall className="w-4 h-4 text-[#D97706]" />
-                <span>Call 1930 Helpline</span>
-              </a>
-            </div>
-
-            {/* Micro trust indicators */}
-            <div className="mt-12 pt-8 border-t border-[#E7E1D8] grid grid-cols-2 sm:grid-cols-3 gap-6 text-xs text-[#57534E]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#EBE3D5] flex items-center justify-center text-[#78350F]">
-                  <EyeOff className="w-4 h-4" />
+        <main id="main-content" tabIndex={-1} className="focus:outline-none">
+          {/* Hero Section */}
+          <section
+            aria-labelledby="hero-heading"
+            className="relative overflow-hidden px-4 pb-14 pt-12 sm:px-6 sm:pb-20 sm:pt-16"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="max-w-3xl">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#DFD4C0] bg-[#EBE3D5]/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#78350F]">
+                  <Sparkles className="h-3.5 w-3.5 text-[#B45309]" aria-hidden="true" />
+                  {copy.hero.eyebrow}
                 </div>
-                <span>
-                  <strong className="text-[#1C1917] block">In-Browser Masking</strong>
-                  OTPs & Aadhaar never hit cloud
-                </span>
-              </div>
 
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#EBE3D5] flex items-center justify-center text-[#78350F]">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <span>
-                  <strong className="text-[#1C1917] block">Deterministic Rules</strong>
-                  Hard security checks always win
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2.5 col-span-2 sm:col-span-1">
-                <div className="w-7 h-7 rounded-lg bg-[#EBE3D5] flex items-center justify-center text-[#78350F]">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <span>
-                  <strong className="text-[#1C1917] block">Evidence Ready</strong>
-                  Formats dossier for 1930 reports
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4 Core Pillars */}
-      <section id="how-it-works" className="py-16 px-4 sm:px-6 bg-[#F4EFE6] border-y border-[#E7E1D8]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[#D97706] mb-2">
-              Architecture & Approach
-            </h2>
-            <p className="text-3xl font-extrabold text-[#1C1917] tracking-tight">
-              Four steps from suspicion to safety
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-3xl font-black text-[#D97706]/30 mb-2 block">01</span>
-                <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E7E1D8] flex items-center justify-center text-[#1C1917] mb-4">
-                  <MessageSquareWarning className="w-5 h-5 text-[#D97706]" />
-                </div>
-                <h3 className="font-bold text-lg text-[#1C1917] mb-2">1. SCAN</h3>
-                <p className="text-sm text-[#57534E] leading-relaxed">
-                  Analyze messages, screenshots, suspicious links, QR codes, or phone numbers directly.
-                </p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-[#F4EFE6] text-xs font-semibold text-[#78350F]">
-                On-device privacy parsing
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-3xl font-black text-[#D97706]/30 mb-2 block">02</span>
-                <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E7E1D8] flex items-center justify-center text-[#1C1917] mb-4">
-                  <ShieldAlert className="w-5 h-5 text-[#D97706]" />
-                </div>
-                <h3 className="font-bold text-lg text-[#1C1917] mb-2">2. ANALYSE</h3>
-                <p className="text-sm text-[#57534E] leading-relaxed">
-                  Evaluate via deterministic rules, Indian brand edit-distance checks, RDAP age, and bounded AI.
-                </p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-[#F4EFE6] text-xs font-semibold text-[#78350F]">
-                Threat lists + Hard rules
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-3xl font-black text-[#D97706]/30 mb-2 block">03</span>
-                <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E7E1D8] flex items-center justify-center text-[#1C1917] mb-4">
-                  <AlertTriangle className="w-5 h-5 text-[#D97706]" />
-                </div>
-                <h3 className="font-bold text-lg text-[#1C1917] mb-2">3. EXPLAIN</h3>
-                <p className="text-sm text-[#57534E] leading-relaxed">
-                  Transparent 3-tier risk verdict with exact matched warning signs and checked data sources.
-                </p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-[#F4EFE6] text-xs font-semibold text-[#78350F]">
-                Never deceptive 100% safe
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-3xl font-black text-[#D97706]/30 mb-2 block">04</span>
-                <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E7E1D8] flex items-center justify-center text-[#1C1917] mb-4">
-                  <ShieldCheck className="w-5 h-5 text-[#D97706]" />
-                </div>
-                <h3 className="font-bold text-lg text-[#1C1917] mb-2">4. PROTECT</h3>
-                <p className="text-sm text-[#57534E] leading-relaxed">
-                  Time-ordered safe steps: freeze accounts, preserve evidence, and direct links to 1930 reporting.
-                </p>
-              </div>
-              <div className="mt-4 pt-4 border-t border-[#F4EFE6] text-xs font-semibold text-[#78350F]">
-                Official reporting pathways
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Message Scanner (Phase 1) */}
-      <section id="scanner" className="py-20 px-4 sm:px-6 bg-[#FAF7F2]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBE3D5] text-[#D97706] text-xs font-bold uppercase tracking-wider mb-3 border border-[#DFD4C0]">
-              <Sparkles className="w-3.5 h-3.5" />
-              Phase 1 Live Intelligence
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#1C1917] tracking-tight mb-3">
-              Suspicious Message Scanner
-            </h2>
-            <p className="text-sm sm:text-base text-[#57534E] leading-relaxed">
-              Paste suspicious SMS, WhatsApp, or email text to receive an immediate, deterministic risk assessment with plain-language explanations and safe next steps.
-            </p>
-          </div>
-
-          <MessageScanner />
-        </div>
-      </section>
-
-      {/* Multimodal Detection Matrix Preview (Phase 2 Roadmap) */}
-      <section id="sample-intelligence" className="py-16 px-4 sm:px-6 bg-[#F4EFE6] border-y border-[#E7E1D8]">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EBE3D5] text-[#78350F] text-[10px] font-bold uppercase tracking-wider mb-2 border border-[#DFD4C0]">
-                Roadmap Preview • Phase 2
-              </div>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-[#D97706] mb-1">
-                Upcoming Threat Modalities
-              </h2>
-              <p className="text-2xl font-black text-[#1C1917] tracking-tight">
-                Preview URL, QR & Phone Call Intelligence
-              </p>
-            </div>
-
-            {/* Tab switchers */}
-            <div className="flex flex-wrap p-1 bg-white rounded-xl border border-[#DFD4C0]">
-              <button
-                onClick={() => setActiveTab("url")}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  activeTab === "url"
-                    ? "bg-[#1C1917] text-[#FAF7F2] shadow-sm"
-                    : "text-[#57534E] hover:text-[#1C1917]"
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5" />
-                <span>Website URL</span>
-              </button>
-              <button
-                onClick={() => setActiveTab("qr")}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  activeTab === "qr"
-                    ? "bg-[#1C1917] text-[#FAF7F2] shadow-sm"
-                    : "text-[#57534E] hover:text-[#1C1917]"
-                }`}
-              >
-                <QrCode className="w-3.5 h-3.5" />
-                <span>UPI QR Code</span>
-              </button>
-              <button
-                onClick={() => setActiveTab("phone")}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  activeTab === "phone"
-                    ? "bg-[#1C1917] text-[#FAF7F2] shadow-sm"
-                    : "text-[#57534E] hover:text-[#1C1917]"
-                }`}
-              >
-                <PhoneCall className="w-3.5 h-3.5" />
-                <span>Call Checklist</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Unified Result Card Showcase */}
-          <div className="bg-white rounded-2xl border-2 border-[#E7E1D8] shadow-card overflow-hidden">
-            {/* Input Header */}
-            <div className="p-6 bg-[#FBF9F5] border-b border-[#E7E1D8]">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#57534E]">
-                  Sample Input ({activeSample.title})
-                </span>
-                <span className="text-[11px] font-semibold text-[#D97706] bg-[#FEF3C7] px-2.5 py-0.5 rounded-full border border-[#FDE68A]">
-                  Pre-Masked for Privacy
-                </span>
-              </div>
-              <p className="font-mono text-sm bg-white p-3.5 rounded-xl border border-[#E7E1D8] text-[#1C1917] break-all">
-                {activeSample.input}
-              </p>
-            </div>
-
-            {/* Verdict Bar */}
-            <div className="p-6 border-b border-[#E7E1D8] grid grid-cols-1 sm:grid-cols-3 gap-6 bg-white">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#78716C] block mb-1">
-                  Risk Level
-                </span>
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-extrabold uppercase tracking-wide border ${activeSample.riskBadgeClass}`}
+                <h1
+                  id="hero-heading"
+                  className="mb-6 text-4xl font-black leading-[1.1] tracking-tight text-[#1C1917] sm:text-5xl lg:text-6xl"
                 >
-                  {activeSample.riskLevel}
-                </span>
-              </div>
+                  {copy.hero.titleStart}{" "}
+                  <span className="text-[#92400E] underline decoration-[#B45309]/30 underline-offset-8">
+                    {copy.hero.titleHighlight}
+                  </span>
+                </h1>
 
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#78716C] block mb-1">
-                  Possible Category
-                </span>
-                <span className="text-sm font-bold text-[#1C1917]">
-                  {activeSample.category}
-                </span>
-              </div>
+                <p className="mb-5 text-base leading-relaxed text-[#57534E] sm:text-lg lg:text-xl">
+                  {copy.hero.intro}
+                </p>
+                <p className="mb-8 max-w-2xl text-xs leading-relaxed text-[#78716C] sm:text-sm">
+                  {copy.hero.disclaimer}
+                </p>
 
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#78716C] block mb-1">
-                  Confidence & Signals
-                </span>
-                <span className="text-sm text-[#57534E] font-medium">
-                  {activeSample.confidence}
-                </span>
-              </div>
-            </div>
+                <div className="flex flex-wrap items-center gap-3 pt-1 sm:gap-4">
+                  <a
+                    href="#scanner"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1C1917] px-5 py-3 text-sm font-semibold text-[#FAF7F2] shadow-md transition-all hover:bg-[#292524] sm:px-6 sm:py-3.5"
+                  >
+                    <span>{copy.hero.primaryCta}</span>
+                    <ChevronRight className="h-4 w-4 text-[#FCD34D]" aria-hidden="true" />
+                  </a>
 
-            {/* Breakdown & Safe Actions */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white">
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#1C1917] mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-[#D97706]" />
-                  Why it was flagged
-                </h4>
-                <ul className="space-y-2.5 text-sm text-[#44403C]">
-                  {activeSample.reasons.map((reason, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#D97706] mt-2 flex-shrink-0" />
-                      <span>{reason}</span>
+                  <a
+                    href="tel:1930"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#DFD4C0] bg-white px-5 py-3 text-sm font-semibold text-[#1C1917] shadow-sm transition-all hover:border-[#B45309] hover:shadow sm:px-6 sm:py-3.5"
+                  >
+                    <PhoneCall className="h-4 w-4 text-[#B45309]" aria-hidden="true" />
+                    <span>{copy.hero.helplineCta}</span>
+                  </a>
+
+                  <a
+                    href="#emergency-help"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-950 shadow-sm transition-all hover:border-red-400 hover:shadow sm:px-6 sm:py-3.5"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-red-600" aria-hidden="true" />
+                    <span>{copy.hero.emergencyCta}</span>
+                  </a>
+                </div>
+
+                <ul className="mt-10 grid grid-cols-1 gap-4 border-t border-[#E7E1D8] pt-7 text-xs text-[#57534E] sm:grid-cols-3 sm:gap-6">
+                  {copy.hero.trust.map((item, index) => (
+                    <li key={item.title} className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#EBE3D5] text-[#78350F]">
+                        {trustIcons[index]}
+                      </span>
+                      <span>
+                        <strong className="block text-[#1C1917]">{item.title}</strong>
+                        {item.body}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
+            </div>
+          </section>
 
-              <div className="bg-[#FAF7F2] p-5 rounded-xl border border-[#E7E1D8]">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#1C1917] mb-3 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#15803D]" />
-                  Safe Next Steps
-                </h4>
-                <ul className="space-y-2.5 text-sm text-[#44403C]">
-                  {activeSample.nextSteps.map((step, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#15803D] mt-2 flex-shrink-0" />
-                      <span className="font-medium">{step}</span>
-                    </li>
-                  ))}
-                </ul>
+          {/* Quick paths into the three main tools */}
+          <section
+            aria-labelledby="quick-start-heading"
+            className="border-y border-[#E7E1D8] bg-[#F4EFE6] px-4 py-12 sm:px-6 sm:py-16"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="mb-8 max-w-2xl">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#92400E]">
+                  {copy.quick.eyebrow}
+                </p>
+                <h2
+                  id="quick-start-heading"
+                  className="text-2xl font-black tracking-tight text-[#1C1917] sm:text-3xl"
+                >
+                  {copy.quick.heading}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-[#57534E]">
+                  {copy.quick.intro}
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                {copy.quick.cards.map((card, index) => (
+                  <a
+                    key={card.href}
+                    href={card.href}
+                    className="group flex flex-col justify-between rounded-2xl border border-[#DFD4C0] bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#B45309] hover:shadow-md motion-reduce:transform-none"
+                  >
+                    <div>
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#92400E]">
+                        {quickIcons[index]}
+                      </span>
+                      <h3 className="mt-4 text-lg font-extrabold text-[#1C1917]">
+                        {card.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed text-[#57534E]">
+                        {card.description}
+                      </p>
+                    </div>
+                    <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-[#92400E] group-hover:text-[#1C1917]">
+                      {card.cta}
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                  </a>
+                ))}
               </div>
             </div>
+          </section>
 
-            {/* Card Footer: Attribution & Disclaimer */}
-            <div className="px-6 py-3 bg-[#F4EFE6] border-t border-[#E7E1D8] flex flex-wrap items-center justify-between text-xs text-[#78716C]">
-              <span>
-                Deterministic rules run first • Bounded AI explanation • Sources: RDAP, RBI/I4C Advisories
-              </span>
-              <span className="font-semibold text-[#78350F]">
-                An estimate, not proof. Always verify via official branch or helpline.
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Privacy Guarantee Section */}
-      <section id="privacy" className="py-16 px-4 sm:px-6 bg-[#1C1917] text-[#FAF7F2]">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#292524] text-[#D97706] text-xs font-bold uppercase tracking-wider mb-4 border border-[#44403C]">
-                <Lock className="w-3.5 h-3.5" />
-                Zero-Leakage Privacy Architecture
+          {/* 4 Core Pillars */}
+          <section
+            id="how-it-works"
+            aria-labelledby="how-it-works-heading"
+            className="scroll-mt-24 border-b border-[#E7E1D8] bg-[#FAF7F2] px-4 py-16 sm:px-6"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="mx-auto mb-12 max-w-2xl text-center">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#92400E]">
+                  {copy.pillars.eyebrow}
+                </h2>
+                <p
+                  id="how-it-works-heading"
+                  className="text-3xl font-extrabold tracking-tight text-[#1C1917]"
+                >
+                  {copy.pillars.heading}
+                </p>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-4 text-[#FAF7F2]">
-                Your confidential data stays on your machine.
-              </h2>
-              <p className="text-sm sm:text-base text-[#A8A29E] leading-relaxed mb-6">
-                Scam messages frequently contain personal accounts, Aadhaar numbers, or OTPs. Satark AI uses an in-browser sanitization engine that redacts sensitive identifiers before any inspection packet touches external inference APIs.
-              </p>
 
-              <div className="space-y-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#D97706]/20 text-[#D97706] flex items-center justify-center font-bold">
-                    ✓
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+                {copy.pillars.items.map((item, index) => (
+                  <div
+                    key={item.title}
+                    className="flex flex-col justify-between rounded-2xl border border-[#DFD4C0] bg-white p-6 shadow-sm"
+                  >
+                    <div>
+                      <span className="mb-2 block text-3xl font-black text-[#B45309]/30">
+                        0{index + 1}
+                      </span>
+                      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-[#E7E1D8] bg-[#FAF7F2]">
+                        {pillarIcons[index]}
+                      </div>
+                      <h3 className="mb-2 text-lg font-bold text-[#1C1917]">{item.title}</h3>
+                      <p className="text-sm leading-relaxed text-[#57534E]">{item.body}</p>
+                    </div>
+                    <div className="mt-4 border-t border-[#F4EFE6] pt-4 text-xs font-semibold text-[#78350F]">
+                      {item.footer}
+                    </div>
                   </div>
-                  <span><strong>On-Device OCR & QR:</strong> Tesseract.js and jsQR execute entirely in browser memory.</span>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Phase 3 Emergency Help Hub */}
+          <HelpHub />
+
+          {/* Live Message Scanner (Phase 1) */}
+          <section
+            id="scanner"
+            aria-labelledby="message-scanner-heading"
+            className="scroll-mt-24 bg-[#FAF7F2] px-4 py-20 sm:px-6"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="mx-auto mb-10 max-w-2xl text-center">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#DFD4C0] bg-[#EBE3D5] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#92400E]">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                  {copy.scanners.messageEyebrow}
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#D97706]/20 text-[#D97706] flex items-center justify-center font-bold">
-                    ✓
+                <h2
+                  id="message-scanner-heading"
+                  className="mb-3 text-3xl font-black tracking-tight text-[#1C1917] sm:text-4xl"
+                >
+                  {copy.scanners.messageTitle}
+                </h2>
+                <p className="text-sm leading-relaxed text-[#57534E] sm:text-base">
+                  {copy.scanners.messageIntro}
+                </p>
+              </div>
+
+              <MessageScanner />
+            </div>
+          </section>
+
+          {/* Live URL & QR Scanner (Phase 2) */}
+          <section
+            id="url-qr-scanner"
+            aria-labelledby="url-qr-heading"
+            className="scroll-mt-24 border-y border-[#E7E1D8] bg-[#F4EFE6] px-4 py-20 sm:px-6"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="mx-auto mb-10 max-w-2xl text-center">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#DFD4C0] bg-white px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#92400E]">
+                  <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
+                  {copy.scanners.urlEyebrow}
+                </div>
+                <h2
+                  id="url-qr-heading"
+                  className="mb-3 text-3xl font-black tracking-tight text-[#1C1917] sm:text-4xl"
+                >
+                  {copy.scanners.urlTitle}
+                </h2>
+                <p className="text-sm leading-relaxed text-[#57534E] sm:text-base">
+                  {copy.scanners.urlIntro}
+                </p>
+              </div>
+
+              <Phase2Scanner />
+            </div>
+          </section>
+
+          {/* Illustrative Threat Modality Examples */}
+          <section
+            id="sample-intelligence"
+            aria-labelledby="sample-heading"
+            className="border-y border-[#E7E1D8] bg-[#F4EFE6] px-4 py-16 sm:px-6"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div>
+                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-[#DFD4C0] bg-[#EBE3D5] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#78350F]">
+                    {copy.samples.eyebrow}
                   </div>
-                  <span><strong>Client-Side Regex Redaction:</strong> Masks 12-digit Aadhaar, PAN IDs, and OTP codes.</span>
+                  <h2 className="mb-1 text-xs font-bold uppercase tracking-widest text-[#92400E]">
+                    {copy.samples.categoryLabel}
+                  </h2>
+                  <p
+                    id="sample-heading"
+                    className="text-2xl font-black tracking-tight text-[#1C1917]"
+                  >
+                    {copy.samples.heading}
+                  </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#D97706]/20 text-[#D97706] flex items-center justify-center font-bold">
-                    ✓
+
+                <div
+                  className="flex flex-wrap rounded-xl border border-[#DFD4C0] bg-white p-1"
+                  role="group"
+                  aria-label={copy.samples.heading}
+                >
+                  {(["url", "qr", "phone"] as const).map((tab) => {
+                    const selected = activeTab === tab;
+                    const Icon = tab === "url" ? Globe : tab === "qr" ? QrCode : PhoneCall;
+                    return (
+                      <button
+                        key={tab}
+                        type="button"
+                        aria-pressed={selected}
+                        aria-controls="sample-example-panel"
+                        onClick={() => setActiveTab(tab)}
+                        className={`flex min-h-9 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                          selected
+                            ? "bg-[#1C1917] text-[#FAF7F2] shadow-sm"
+                            : "text-[#57534E] hover:text-[#1C1917]"
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>{copy.samples.tabs[tab]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div
+                id="sample-example-panel"
+                className="overflow-hidden rounded-2xl border-2 border-[#E7E1D8] bg-white shadow-card"
+              >
+                <div className="border-b border-[#E7E1D8] bg-[#FBF9F5] p-5 sm:p-6">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-4">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#57534E]">
+                      {copy.samples.sampleInput} ({activeSample.title})
+                    </span>
+                    <span className="rounded-full border border-[#FDE68A] bg-[#FEF3C7] px-2.5 py-0.5 text-[11px] font-semibold text-[#78350F]">
+                      {copy.samples.preMasked}
+                    </span>
                   </div>
-                  <span><strong>Zero Persistence by Default:</strong> No user scan histories or message texts are saved to disk.</span>
+                  <p className="break-all rounded-xl border border-[#E7E1D8] bg-white p-3.5 font-mono text-sm text-[#1C1917]">
+                    {activeSample.input}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 border-b border-[#E7E1D8] bg-white p-5 sm:grid-cols-3 sm:p-6">
+                  <div>
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#78716C]">
+                      {copy.samples.riskLevel}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm font-extrabold uppercase tracking-wide ${activeSample.riskBadgeClass}`}
+                    >
+                      <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />
+                      {activeSample.riskLevel}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#78716C]">
+                      {copy.samples.category}
+                    </span>
+                    <span className="text-sm font-bold text-[#1C1917]">
+                      {activeSample.category}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#78716C]">
+                      {copy.samples.confidence}
+                    </span>
+                    <span className="text-sm font-medium text-[#57534E]">
+                      {activeSample.confidence}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8 bg-white p-5 md:grid-cols-2 sm:p-6">
+                  <div>
+                    <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#1C1917]">
+                      <AlertTriangle className="h-4 w-4 text-[#B45309]" aria-hidden="true" />
+                      {copy.samples.whyFlagged}
+                    </h3>
+                    <ul className="space-y-2.5 text-sm text-[#44403C]">
+                      {activeSample.reasons.map((reason) => (
+                        <li key={reason} className="flex items-start gap-2.5">
+                          <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#B45309]" />
+                          <span>{reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="rounded-xl border border-[#E7E1D8] bg-[#FAF7F2] p-5">
+                    <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#1C1917]">
+                      <ShieldCheck className="h-4 w-4 text-[#15803D]" aria-hidden="true" />
+                      {copy.samples.safeSteps}
+                    </h3>
+                    <ul className="space-y-2.5 text-sm text-[#44403C]">
+                      {activeSample.nextSteps.map((step) => (
+                        <li key={step} className="flex items-start gap-2.5">
+                          <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#15803D]" />
+                          <span className="font-medium">{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E7E1D8] bg-[#F4EFE6] px-5 py-3 text-xs text-[#78716C] sm:px-6">
+                  <span>{copy.samples.footerLeft}</span>
+                  <span className="font-semibold text-[#78350F]">
+                    {copy.samples.footerRight}
+                  </span>
                 </div>
               </div>
             </div>
+          </section>
 
-            <div className="bg-[#292524] p-6 rounded-2xl border border-[#44403C] font-mono text-xs text-[#A8A29E]">
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#44403C] text-xs font-semibold text-[#FAF7F2]">
-                <span>Client-Side PII Sanitizer Preview</span>
-                <span className="text-[#D97706]">Regex Guard Active</span>
-              </div>
-              <p className="text-[#D6D3D1] mb-2">// Raw User Screenshot Text:</p>
-              <div className="bg-[#1C1917] p-3 rounded-lg border border-[#44403C] mb-4 text-red-300">
-                &ldquo;Your Aadhaar 4920 1829 3847 linked to A/C 98127391823 has OTP 839102. Click to verify.&rdquo;
-              </div>
-              <p className="text-[#D6D3D1] mb-2">// Redacted Packet (Sent to Analyzer):</p>
-              <div className="bg-[#1C1917] p-3 rounded-lg border border-[#44403C] text-green-300">
-                &ldquo;Your Aadhaar [MASKED_AADHAAR] linked to A/C [MASKED_BANK_ACC] has OTP [MASKED_OTP]. Click to verify.&rdquo;
-              </div>
-              <div className="text-[11px] text-[#A8A29E] mt-3">
-                * Links and brand names are preserved because threat detection requires them.
+          {/* Privacy Guarantee Section */}
+          <section
+            id="privacy"
+            aria-labelledby="privacy-heading"
+            className="scroll-mt-24 bg-[#1C1917] px-4 py-16 text-[#FAF7F2] sm:px-6"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2">
+                <div>
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#44403C] bg-[#292524] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#FCD34D]">
+                    <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                    {copy.privacy.eyebrow}
+                  </div>
+                  <h2
+                    id="privacy-heading"
+                    className="mb-4 text-3xl font-black tracking-tight text-[#FAF7F2] sm:text-4xl"
+                  >
+                    {copy.privacy.heading}
+                  </h2>
+                  <p className="mb-6 text-sm leading-relaxed text-[#D6D3D1] sm:text-base">
+                    {copy.privacy.intro}
+                  </p>
+
+                  <div className="space-y-4 text-xs sm:text-sm">
+                    {copy.privacy.bullets.map((bullet) => (
+                      <div key={bullet.title} className="flex items-start gap-3">
+                        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#D97706]/20 font-bold text-[#FCD34D]">
+                          ✓
+                        </div>
+                        <span>
+                          <strong>{bullet.title}</strong> {bullet.body}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-[#44403C] bg-[#292524] p-5 font-mono text-xs text-[#D6D3D1] sm:p-6">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-[#44403C] pb-3 text-xs font-semibold text-[#FAF7F2]">
+                    <span>{copy.privacy.previewTitle}</span>
+                    <span className="text-[#FCD34D]">{copy.privacy.previewStatus}</span>
+                  </div>
+                  <p className="mb-2 text-[#D6D3D1]">{copy.privacy.previewRaw}</p>
+                  <div className="mb-4 break-words rounded-lg border border-[#44403C] bg-[#1C1917] p-3 text-red-300">
+                    {copy.privacy.previewRawText}
+                  </div>
+                  <p className="mb-2 text-[#D6D3D1]">{copy.privacy.previewRedacted}</p>
+                  <div className="break-words rounded-lg border border-[#44403C] bg-[#1C1917] p-3 text-green-300">
+                    {copy.privacy.previewRedactedText}
+                  </div>
+                  <div className="mt-3 text-[11px] text-[#A8A29E]">
+                    {copy.privacy.previewNote}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* Official Emergency Resources */}
-      <section id="resources" className="py-16 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[#D97706] mb-2">
-              Official Indian Channels
-            </h2>
-            <p className="text-3xl font-black text-[#1C1917] tracking-tight">
-              Actionable Helplines & Portals
-            </p>
-          </div>
+          {/* Official Emergency Resources */}
+          <section
+            id="resources"
+            aria-labelledby="resources-heading"
+            className="scroll-mt-24 px-4 py-16 sm:px-6"
+          >
+            <div className="mx-auto max-w-6xl">
+              <div className="mx-auto mb-12 max-w-2xl text-center">
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#92400E]">
+                  {copy.resources.eyebrow}
+                </h2>
+                <p
+                  id="resources-heading"
+                  className="text-3xl font-black tracking-tight text-[#1C1917]"
+                >
+                  {copy.resources.heading}
+                </p>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm hover:border-[#D97706] transition-all">
-              <span className="text-xs font-bold text-[#D97706] uppercase tracking-wider block mb-1">
-                24x7 Immediate Response
-              </span>
-              <h3 className="text-xl font-black text-[#1C1917] mb-2">1930 Helpline</h3>
-              <p className="text-xs text-[#57534E] mb-4 leading-relaxed">
-                National Cyber Fraud Helpline operated by Citizen Financial Cyber Fraud Reporting System. Call within 2 hours to freeze stolen money.
-              </p>
-              <a
-                href="tel:1930"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#D97706] inline-flex items-center gap-1"
-              >
-                Call 1930 Directly →
-              </a>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {copy.resources.cards.map((card, index) => {
+                  const hrefs = [
+                    "tel:1930",
+                    "https://cybercrime.gov.in",
+                    "https://sancharsaathi.gov.in",
+                    "https://cybercrime.gov.in/webform/cyber_suspect.aspx",
+                  ];
+                  const external = index > 0;
+                  return (
+                    <div
+                      key={card.title}
+                      className="rounded-2xl border border-[#DFD4C0] bg-white p-6 shadow-sm transition-all hover:border-[#B45309]"
+                    >
+                      <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#92400E]">
+                        {card.meta}
+                      </span>
+                      <h3 className="mb-2 text-xl font-black text-[#1C1917]">{card.title}</h3>
+                      <p className="mb-4 text-xs leading-relaxed text-[#57534E]">
+                        {card.body}
+                      </p>
+                      <a
+                        href={hrefs[index]}
+                        {...(external
+                          ? { target: "_blank", rel: "noopener noreferrer" }
+                          : {})}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#1C1917] hover:text-[#92400E]"
+                      >
+                        {card.link}
+                        <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <footer className="border-t border-[#E7E1D8] bg-[#FAF7F2] px-4 py-12 text-xs text-[#57534E] sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#B45309] text-white">
+                <Shield className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#1C1917]">SATARK AI</p>
+                <p className="text-[11px] text-[#78716C]">{copy.footer.tagline}</p>
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm hover:border-[#D97706] transition-all">
-              <span className="text-xs font-bold text-[#D97706] uppercase tracking-wider block mb-1">
-                Formal Complaint Portal
-              </span>
-              <h3 className="text-xl font-black text-[#1C1917] mb-2">cybercrime.gov.in</h3>
-              <p className="text-xs text-[#57534E] mb-4 leading-relaxed">
-                Official Ministry of Home Affairs portal to file FIRs, cybercrime reports, and track investigation acknowledgments.
-              </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
               <a
-                href="https://cybercrime.gov.in"
+                href="https://github.com/a-thapa17/satark-ai"
                 target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#D97706] inline-flex items-center gap-1"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 hover:text-[#1C1917]"
               >
-                Visit Portal →
+                {copy.footer.github}
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
               </a>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm hover:border-[#D97706] transition-all">
-              <span className="text-xs font-bold text-[#D97706] uppercase tracking-wider block mb-1">
-                Telecom Fraud & Chakshu
+              <span className="text-[#D6D3D1]" aria-hidden="true">
+                •
               </span>
-              <h3 className="text-xl font-black text-[#1C1917] mb-2">Sanchar Saathi</h3>
-              <p className="text-xs text-[#57534E] mb-4 leading-relaxed">
-                Department of Telecommunications platform to report fraudulent callers, spam SMS, and block lost or stolen mobile handsets.
-              </p>
-              <a
-                href="https://sancharsaathi.gov.in"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#D97706] inline-flex items-center gap-1"
-              >
-                Report Number →
-              </a>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-[#DFD4C0] shadow-sm hover:border-[#D97706] transition-all">
-              <span className="text-xs font-bold text-[#D97706] uppercase tracking-wider block mb-1">
-                Suspect Identifier Database
+              <span className="text-[#78716C]">{copy.footer.license}</span>
+              <span className="text-[#D6D3D1]" aria-hidden="true">
+                •
               </span>
-              <h3 className="text-xl font-black text-[#1C1917] mb-2">I4C Suspect Registry</h3>
-              <p className="text-xs text-[#57534E] mb-4 leading-relaxed">
-                Indian Cyber Crime Coordination Centre (I4C) portal to report suspect UPI VPAs, bank accounts, and phone numbers.
-              </p>
-              <a
-                href="https://cybercrime.gov.in/webform/cyber_suspect.aspx"
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#D97706] inline-flex items-center gap-1"
-              >
-                Submit Suspect Info →
-              </a>
+              <span className="font-semibold text-[#92400E]">{copy.footer.phase}</span>
             </div>
           </div>
-        </div>
-      </section>
+        </footer>
 
-      {/* Footer */}
-      <footer className="bg-[#FAF7F2] border-t border-[#E7E1D8] py-12 px-4 sm:px-6 text-xs text-[#57534E]">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#D97706] flex items-center justify-center text-white">
-              <Shield className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-sm text-[#1C1917]">SATARK AI</p>
-              <p className="text-[11px] text-[#78716C]">Stay Alert. Stay Protected. • Digital Safety Platform</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-6">
-            <a href="https://github.com/a-thapa17/satark-ai" target="_blank" rel="noreferrer" className="hover:text-[#1C1917] transition-colors">
-              GitHub Repository
-            </a>
-            <span className="text-[#D6D3D1]">•</span>
-            <span className="text-[#78716C]">MIT License</span>
-            <span className="text-[#D6D3D1]">•</span>
-            <span className="text-[#D97706] font-semibold">Phase 1 Live</span>
-          </div>
-        </div>
-      </footer>
+        {/* Always-visible emergency actions on phones and small tablets. */}
+        <nav
+          aria-label={copy.emergencyBar.label}
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-1 border-t border-[#44403C] bg-[#1C1917]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden"
+        >
+          <a
+            href="tel:112"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-red-700 px-2 py-2 text-center text-[11px] font-bold text-white hover:bg-red-800"
+          >
+            <PhoneCall className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+            {copy.emergencyBar.emergency}
+          </a>
+          <a
+            href="tel:1930"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-[#D97706] bg-[#292524] px-2 py-2 text-center text-[11px] font-bold text-[#FCD34D] hover:bg-[#44403C]"
+          >
+            <PhoneCall className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+            {copy.emergencyBar.helpline}
+          </a>
+          <a
+            href="#emergency-help"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-[#57534E] bg-transparent px-2 py-2 text-center text-[11px] font-bold text-[#FAF7F2] hover:bg-[#292524]"
+          >
+            <HelpCircle className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+            {copy.emergencyBar.help}
+          </a>
+        </nav>
       </div>
     </div>
   );

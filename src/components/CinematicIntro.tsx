@@ -1,103 +1,136 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import { LANDING_COPY } from "@/lib/i18n/landing";
+import {
+  getIntroSkipReason,
+  hasSeenIntro,
+  INTRO_FADE_MS,
+  INTRO_SESSION_KEY,
+} from "@/lib/intro";
 
 interface CinematicIntroProps {
   onComplete?: () => void;
 }
 
 export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
-  // Start rendered so the overlay exists synchronously if satark-intro-active is present in HTML
+  const { language } = useLanguage();
+  const copy = LANDING_COPY[language].intro;
+  // Render initially so the server overlay can be displayed by the
+  // pre-hydration script, then hide immediately if this session has seen it.
   const [shouldRender, setShouldRender] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
-
-  const dismissIntro = useCallback(() => {
-    setIsFadingOut(true);
-    try {
-      sessionStorage.setItem("satark_intro_seen", "true");
-      document.documentElement.classList.remove("satark-intro-active");
-    } catch {
-      // Graceful fallback if storage is restricted or unavailable
-    }
-
-    const timer = setTimeout(() => {
-      setShouldRender(false);
-      if (onComplete) onComplete();
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+  const skipButtonRef = useRef<HTMLButtonElement>(null);
+  const timersRef = useRef<number[]>([]);
+  const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
-    // 1. Check prefers-reduced-motion
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  const schedule = useCallback((callback: () => void, delay: number) => {
+    const timer = window.setTimeout(callback, delay);
+    timersRef.current.push(timer);
+    return timer;
+  }, []);
+
+  const finish = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    setShouldRender(false);
+    onCompleteRef.current?.();
+  }, []);
+
+  const markIntroSeen = useCallback(() => {
     try {
-      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-      if (mediaQuery.matches) {
-        document.documentElement.classList.remove("satark-intro-active");
-        setShouldRender(false);
-        return;
-      }
+      sessionStorage.setItem(INTRO_SESSION_KEY, "true");
     } catch {
-      // Ignore media query evaluation failures
+      // Storage may be unavailable; the intro still closes safely.
+    }
+    document.documentElement.classList.remove("satark-intro-active");
+  }, []);
+
+  const dismissIntro = useCallback(() => {
+    if (completedRef.current) return;
+    markIntroSeen();
+    setIsFadingOut(true);
+    schedule(finish, INTRO_FADE_MS);
+  }, [finish, markIntroSeen, schedule]);
+
+  useEffect(() => {
+    let reducedMotion = false;
+    let seen = false;
+    try {
+      reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+    } catch {
+      reducedMotion = false;
+    }
+    try {
+      seen = hasSeenIntro(sessionStorage.getItem(INTRO_SESSION_KEY));
+    } catch {
+      seen = false;
     }
 
-    // 2. Check sessionStorage for returning visits
-    try {
-      const hasSeen = sessionStorage.getItem("satark_intro_seen");
-      if (hasSeen === "true") {
+    const reason = getIntroSkipReason({ reducedMotion, seen });
+    if (reason) {
+      if (reason === "reduced_motion") {
+        markIntroSeen();
+      } else {
         document.documentElement.classList.remove("satark-intro-active");
-        setShouldRender(false);
-        return;
       }
-    } catch {
-      // Storage blocked; proceed safely without trapping
+      completedRef.current = true;
+      setShouldRender(false);
+      return;
     }
 
-    // Ensure html has class satark-intro-active for CSS locking
     try {
       document.documentElement.classList.add("satark-intro-active");
+      skipButtonRef.current?.focus();
     } catch {
-      // Fallback
+      // Focus and class changes are enhancements; the overlay still works.
     }
 
-    // 3. Timed animation sequence (Total ~4.0 seconds):
-    // - 0.0s – 0.8s: Circuit lines draw outward
-    // - 0.8s – 1.6s: Circuit nodes illuminate & logo reveals
-    // - 1.6s – 2.5s: Tagline words appear sequentially (STAY, ALERT., STAY, PROTECTED.)
-    // - 2.5s – 3.4s: Full logo and tagline remain visible briefly (settled)
-    // - 3.4s – 4.0s: Smooth fade transition (600ms) to homepage
-    const fadeTimer = setTimeout(() => {
-      setIsFadingOut(true);
-      try {
-        sessionStorage.setItem("satark_intro_seen", "true");
-        document.documentElement.classList.remove("satark-intro-active");
-      } catch {
-        // Fallback
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        dismissIntro();
       }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Timed sequence: circuit/proof lines, logo, tagline, then a short hold.
+    // A visible skip control and the 112 link remain available throughout.
+    schedule(() => {
+      setIsFadingOut(true);
+      markIntroSeen();
     }, 3400);
 
-    const completeTimer = setTimeout(() => {
-      setShouldRender(false);
-      if (onComplete) onComplete();
-    }, 4000);
+    schedule(finish, 4000);
 
-    // Fail-safe watchdog timer: never trap visitors if browser gets throttled
-    const safetyTimer = setTimeout(() => {
-      try {
-        document.documentElement.classList.remove("satark-intro-active");
-      } catch {
-        // Fallback
-      }
-      setShouldRender(false);
+    // Fail-safe watchdog: never leave the page hidden if timers are delayed.
+    schedule(() => {
+      document.documentElement.classList.remove("satark-intro-active");
+      finish();
     }, 4600);
 
     return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(completeTimer);
-      clearTimeout(safetyTimer);
+      window.removeEventListener("keydown", handleKeyDown);
+      for (const timer of timersRef.current) {
+        window.clearTimeout(timer);
+      }
+      timersRef.current = [];
     };
-  }, [onComplete]);
+  }, [dismissIntro, finish, markIntroSeen, schedule]);
 
   if (!shouldRender) {
     return null;
@@ -107,21 +140,36 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     <div
       id="satark-intro-overlay"
       role="dialog"
-      aria-label="Satark AI Introduction"
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#141211] overflow-hidden select-none transition-opacity duration-600 ease-in-out ${
-        isFadingOut ? "opacity-0 pointer-events-none" : "opacity-100"
+      aria-modal="true"
+      aria-label={copy.dialogLabel}
+      aria-describedby="satark-intro-description"
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#141211] select-none transition-opacity duration-500 ease-in-out ${
+        isFadingOut ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
     >
-      {/* Skip Intro Button */}
-      <button
-        onClick={dismissIntro}
-        type="button"
-        className="absolute top-6 right-6 z-20 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider text-[#A8A29E] hover:text-[#FAF7F2] bg-[#1C1917]/85 hover:bg-[#292524] border border-[#44403C] hover:border-[#D97706]/60 shadow-sm backdrop-blur transition-all duration-200"
-        aria-label="Skip Introduction"
-      >
-        <span>SKIP INTRO</span>
-        <span aria-hidden="true" className="text-xs">✕</span>
-      </button>
+      <p id="satark-intro-description" className="sr-only">
+        {copy.description}
+      </p>
+
+      <div className="absolute inset-x-3 top-3 z-20 flex flex-wrap items-center justify-between gap-2 sm:inset-x-6 sm:top-6">
+        <a
+          href="tel:112"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-red-300/60 bg-red-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FCD34D] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141211]"
+        >
+          <span aria-hidden="true">☎</span>
+          {copy.emergency}
+        </a>
+        <button
+          ref={skipButtonRef}
+          onClick={dismissIntro}
+          type="button"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[#44403C] bg-[#1C1917]/85 px-3.5 py-2 text-xs font-semibold tracking-wider text-[#E7E5E4] shadow-sm backdrop-blur transition-colors hover:border-[#D97706]/60 hover:bg-[#292524] hover:text-[#FAF7F2] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FCD34D] focus-visible:ring-offset-2 focus-visible:ring-offset-[#141211]"
+          aria-label={copy.skipIntro}
+        >
+          <span>{copy.skipIntro}</span>
+          <span aria-hidden="true" className="text-xs">✕</span>
+        </button>
+      </div>
 
       {/* Ambient Radial Backglow */}
       <div
@@ -239,19 +287,24 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
         <div className="mt-3 sm:mt-4 text-center w-full">
           <div
             className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3.5 gap-y-1 font-extrabold tracking-[0.22em] sm:tracking-[0.28em] text-xs sm:text-sm md:text-[15px]"
-            aria-label="STAY ALERT. STAY PROTECTED."
+            aria-label={copy.taglineAria}
           >
-            <span className="tagline-word word-1 inline-block">STAY</span>
-            <span className="tagline-word word-2 inline-block">ALERT.</span>
-            <span className="tagline-word word-3 inline-block">STAY</span>
-            <span className="tagline-word word-4 inline-block">PROTECTED.</span>
+            {copy.taglineWords.map((word, index) => (
+              <span
+                key={`${word}-${index}`}
+                className={`tagline-word word-${index + 1} inline-block`}
+                aria-hidden="true"
+              >
+                {word}
+              </span>
+            ))}
           </div>
 
           {/* Subtitle Line & Glowing Settle (2.45s) */}
           <div className="mt-3 animate-subtitle-settle">
             <div className="h-[1px] w-24 sm:w-28 mx-auto bg-gradient-to-r from-transparent via-[#D97706]/70 to-transparent mb-2" />
             <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A8A29E]">
-              Digital Safety &amp; Scam Intelligence
+              {copy.subtitle}
             </p>
           </div>
         </div>

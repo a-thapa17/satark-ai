@@ -19,6 +19,37 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Keyboard focus is always visible, including on links and custom buttons
+   that do not use a utility ring. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #b45309;
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background: #1c1917;
+  color: #faf7f2;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+[hidden] {
+  display: none !important;
+}
+
 ::selection {
   background-color: #FEF3C7;
   color: #92400E;
@@ -278,3 +309,34 @@ html.satark-intro-active #main-homepage-content {
   }
 }
 
+
+/* =========================================================
+   Phase 4: Global reduced-motion and touch-target safeguards
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  html:focus-within {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keep touch targets usable without changing desktop density. */
+@media (pointer: coarse) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+}

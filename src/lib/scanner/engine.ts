@@ -112,6 +112,15 @@ export class MessageScannerEngine {
     const hasJobUpfrontFee = threatSignals.some((s) => s.id === "CTX_JOB_EARNINGS_WITH_UPFRONT_FEE");
     const hasSuspensionCombo = threatSignals.some((s) => s.id === "CTX_SUSPENSION_WITH_LINK_OR_CREDS");
     const hasPrizeWithLink = threatSignals.some((s) => s.id === "CTX_PRIZE_LURE_WITH_LINK");
+    const hasRefundFee = threatSignals.some((s) => s.id === "CTX_REFUND_WITH_FEE");
+    const hasPrizeBankDetails = threatSignals.some(
+      (s) => s.id === "CTX_PRIZE_WITH_BANK_DETAILS"
+    );
+    const hasDeliveryLure = threatSignals.some((s) => s.id === "IMP_DELIVERY_PAYMENT_LURE");
+    const hasLoanFee = threatSignals.some((s) => s.id === "PAY_LOAN_APPROVAL_FEE");
+    const hasInvestmentLure = threatSignals.some(
+      (s) => s.id === "INVEST_GUARANTEED_HIGH_RETURN"
+    );
     const hasUrl = hasGenericHttpUrl(trimmed);
 
     let isHardHighRisk = false;
@@ -172,6 +181,30 @@ export class MessageScannerEngine {
       isHardHighRisk = true;
     }
 
+    // Hard Rule 10: Refund/rebate released only after an upfront fee
+    if (hasRefundFee || hasPrizeBankDetails) {
+      rawScore = Math.max(rawScore, 80);
+      isHardHighRisk = true;
+    }
+
+    // Hard Rule 11: Delivery lure combined with an obfuscated or lookalike link
+    if (hasDeliveryLure && hasSuspiciousLink) {
+      rawScore = Math.max(rawScore, 80);
+      isHardHighRisk = true;
+    }
+
+    // Hard Rule 12: Advance fee demanded to release an approved loan
+    if (hasLoanFee) {
+      rawScore = Math.max(rawScore, 85);
+      isHardHighRisk = true;
+    }
+
+    // Hard Rule 13: Guaranteed high-frequency investment returns
+    if (hasInvestmentLure) {
+      rawScore = Math.max(rawScore, 85);
+      isHardHighRisk = true;
+    }
+
     // Clamp score to 0..100
     const finalScore = Math.min(100, Math.max(0, rawScore));
 
@@ -211,10 +244,51 @@ export class MessageScannerEngine {
         reasons.push(`${signal.label}: ${signal.explanation}`);
       }
 
-      // Generate action-oriented next steps
+      // Generate action-oriented next steps. Put the finding-specific action
+      // before generic link/impersonation advice so it survives list truncation.
+      if (hasDigitalArrest) {
+        safeNextSteps.push(
+          "Hang up immediately. Police, CBI, and Customs NEVER conduct arrests or demand bail transfers via video call."
+        );
+      }
+      if (hasMaliciousApp) {
+        safeNextSteps.push(
+          "Do NOT download APK files or install AnyDesk, TeamViewer, or QuickSupport on your device."
+        );
+      }
       if (hasCredAsk) {
         safeNextSteps.push(
           "Never share your OTP, PIN, password, or card CVV — do NOT reply to this message or provide these details under any circumstances."
+        );
+      }
+      if (hasDeliveryLure) {
+        safeNextSteps.push(
+          "Track the parcel only in the courier's official app or website. Do not pay or update address details through the link in this message."
+        );
+      }
+      if (hasRefundFee) {
+        safeNextSteps.push(
+          "Check refunds directly in the official bank, tax, or merchant portal. A genuine refund never requires an upfront fee or a link from the message."
+        );
+      }
+      if (hasLoanFee) {
+        safeNextSteps.push(
+          "Do not pay any processing, activation, or insurance fee to release a loan. Verify the lender and its registration directly with your bank or the RBI."
+        );
+      }
+      if (hasInvestmentLure) {
+        safeNextSteps.push(
+          "Do not transfer money to this investment or trading offer. Check SEBI registration and use only regulated intermediaries; guaranteed high returns are a fraud warning."
+        );
+      }
+      if (hasPrizeBankDetails) {
+        safeNextSteps.push(
+          "Never share bank account details, IFSC, Aadhaar, PAN, or card details to claim a prize or reward."
+        );
+      }
+      if (hasUpiTrap) {
+        safeNextSteps.push(
+          "Remember: Entering your UPI PIN or scanning a QR code ALWAYS transfers money OUT of your account."
         );
       }
       if (hasSuspiciousLink) {
@@ -225,21 +299,6 @@ export class MessageScannerEngine {
       if (hasImpersonation || hasUrgency) {
         safeNextSteps.push(
           "Contact the organization directly using the official toll-free number from their verified website or mobile app."
-        );
-      }
-      if (hasUpiTrap) {
-        safeNextSteps.push(
-          "Remember: Entering your UPI PIN or scanning a QR code ALWAYS transfers money OUT of your account."
-        );
-      }
-      if (hasDigitalArrest) {
-        safeNextSteps.push(
-          "Hang up immediately. Police, CBI, and Customs NEVER conduct arrests or demand bail transfers via video call."
-        );
-      }
-      if (hasMaliciousApp) {
-        safeNextSteps.push(
-          "Do NOT download APK files or install AnyDesk, TeamViewer, or QuickSupport on your device."
         );
       }
       if (hasPrizeWithLink || hasUrl) {
@@ -263,17 +322,31 @@ export class MessageScannerEngine {
     else if (hasUpiTrap) category = "UPI / Payment Fraud";
     else if (hasCredAsk && hasImpersonation) category = "Bank Impersonation / Phishing";
     else if (hasCredAsk) category = "Credential Harvesting";
+    else if (hasDeliveryLure) category = "Delivery / Courier Phishing";
+    else if (hasInvestmentLure) category = "Investment / Trading Scam";
+    else if (hasLoanFee || hasRefundFee) category = "Refund / Advance-Fee Scam";
+    else if (hasPrizeBankDetails) category = "Prize / Bank-Details Lure";
     else if (threatSignals.some((s) => s.category === "JOB_PRIZE_SCAM")) category = "Job / Prize Lure";
     else if (threatSignals.some((s) => s.category === "MALICIOUS_APP_ACCESS")) category = "Malicious App / APK Lure";
     else if (hasSuspiciousLink) category = "Suspicious Link / Phishing";
     else if (threatSignals.length > 0) category = threatSignals[0].label;
 
-    // Confidence level
+    // Confidence reflects evidence strength, not the mere existence of a
+    // keyword. A single ambiguity should not produce a high-confidence warning.
     let confidence: "High" | "Medium" | "Low" = "Low";
-    if (threatSignals.length >= 2 || isHardHighRisk || verdict === "NO_STRONG_WARNING") {
-      confidence = "High";
-    } else if (threatSignals.length === 1) {
-      confidence = "Medium";
+    if (verdict === "HIGH_RISK") {
+      confidence =
+        isHardHighRisk ||
+        threatSignals.length >= 2 ||
+        threatSignals.some((s) => s.severity === "CRITICAL")
+          ? "High"
+          : "Medium";
+    } else if (verdict === "SUSPICIOUS") {
+      confidence =
+        threatSignals.length >= 2 ||
+        threatSignals.some((s) => s.severity === "CRITICAL" || s.severity === "HIGH")
+          ? "Medium"
+          : "Low";
     }
 
     let limitationsDisclaimer =
@@ -294,9 +367,10 @@ export class MessageScannerEngine {
       signals: threatSignals,
       defensiveSignals,
       reasons: reasons.slice(0, 4), // Top 4 clear reasons
-      safeNextSteps: safeNextSteps.slice(0, 4), // Top 4 actionable steps
+      safeNextSteps: safeNextSteps.slice(0, 6), // Top actionable steps
       maskedInput: maskResult.maskedText,
       rawInputLength: trimmed.length,
+      maskedItemsCount: maskResult.maskedItemsCount,
       timestamp: new Date().toISOString(),
       limitationsDisclaimer,
     };
@@ -356,19 +430,9 @@ export class MessageScannerEngine {
       finalScore = Math.max(finalScore, 25);
     }
 
-    const combinedActions = [...ruleReport.safeNextSteps];
-    for (const aiAction of aiReport.recommendedActions) {
-      if (
-        !combinedActions.some(
-          (existing) =>
-            existing.toLowerCase().includes(aiAction.toLowerCase().slice(0, 20)) ||
-            aiAction.toLowerCase().includes(existing.toLowerCase().slice(0, 20))
-        )
-      ) {
-        combinedActions.push(aiAction);
-      }
-    }
-
+    // Keep AI recommendations in the clearly labelled AI panel. The
+    // deterministic safe steps stay untouched so unverified model output can
+    // never be mistaken for the trusted safety checklist.
     let confidence = ruleReport.confidence;
     if (aiSupportedUpgrade) {
       confidence = "Medium";
@@ -392,7 +456,6 @@ export class MessageScannerEngine {
       confidence,
       category,
       summary: summaryForVerdict(finalVerdict, aiSupportedUpgrade),
-      safeNextSteps: combinedActions.slice(0, 6),
       aiAnalysis: updatedAiReport,
       aiStatus: "success",
     };
